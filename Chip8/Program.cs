@@ -11,7 +11,7 @@ namespace Chip8
 
             
             CPU cpu = new CPU();
-            using (BinaryReader reader = new BinaryReader(new FileStream("heart_monitor.ch8", FileMode.Open)))
+            using (BinaryReader reader = new BinaryReader(new FileStream("sample.ch8", FileMode.Open)))
             {
                 List<byte> program = new List<byte>();
                 while (reader.BaseStream.Position < reader.BaseStream.Length-1)
@@ -79,6 +79,7 @@ namespace Chip8
         public void Step()
         {
             //var opcode = Program[PC];
+            //byte swapping?
             var opcode = (ushort)((RAM[PC] << 8) | RAM[PC + 1]);
 
             if (WaitingForKeyPress)
@@ -87,6 +88,7 @@ namespace Chip8
                 return;
             }
 
+            //this only takes the first hex opcode
             ushort nibble = (ushort)(opcode & 0xF000);
 
             PC += 2;
@@ -95,6 +97,7 @@ namespace Chip8
                 case 0x0000:
                     if(opcode == 0x00e0)
                     {
+                        //Display is a single array
                         for (int i = 0; i < Display.Length; i++) Display[i] = 0;
                     }
                     else if(opcode == 0x00ee)
@@ -114,6 +117,7 @@ namespace Chip8
                     PC = (ushort)(opcode & 0x0FFF);
                     break;
                 case 0x3000:
+                    //PC is already added in advance, so adding extra PC is equivalent to skipping an instruction
                     if (V[(opcode & 0x0F00) >> 8] == (opcode & 0x00FF)) PC += 2;
                     break;
                 case 0x4000:
@@ -181,9 +185,10 @@ namespace Chip8
                     for (int i = 0; i < n; i++)
                     {
                         byte mem = RAM[I+i];
-
+                        
                         for (int j = 0;j < 8; j++)
                         {
+                            //Checking each byte one by one, so need to shift the byte by a certain amount
                             byte pixel = (byte)(mem >> (7 - j) & 0x01);
                             int index = x + j + (y + i) * 64;
                             if (pixel == 1 && Display[index] != 0) V[15] = 1;
@@ -198,7 +203,7 @@ namespace Chip8
                                 Console.SetCursorPosition(x + j, y + i);
                                 Console.Write("*");
                             }
-
+                            //XOR
                             Display[index] = (byte)(Display[index] ^ pixel);
                         }
                     }
