@@ -19,6 +19,11 @@ namespace Chip8
 
                     //var opcode = reader.ReadUInt16();
                     Console.WriteLine($"{opcode.ToString("X4")}");
+                    //test
+                    //test1
+                    //test2
+                    //test3
+
                 }
 
             }
