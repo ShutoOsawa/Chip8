@@ -11,7 +11,7 @@ namespace Chip8
 
             
             CPU cpu = new CPU();
-            using (BinaryReader reader = new BinaryReader(new FileStream("sample.ch8", FileMode.Open)))
+            using (BinaryReader reader = new BinaryReader(new FileStream("IBM LOGO.ch8", FileMode.Open)))
             {
                 List<byte> program = new List<byte>();
                 while (reader.BaseStream.Position < reader.BaseStream.Length-1)
