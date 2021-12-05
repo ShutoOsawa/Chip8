@@ -33,7 +33,7 @@ namespace Chip8
             }
 
             CPU cpu = new CPU();
-            using (BinaryReader reader = new BinaryReader(new FileStream(@"heart_monitor.ch8", FileMode.Open)))
+            using (BinaryReader reader = new BinaryReader(new FileStream(@"ibm logo.ch8", FileMode.Open)))
             {
                 List<byte> program = new List<byte>();
                 while (reader.BaseStream.Position < reader.BaseStream.Length-1)
@@ -232,7 +232,7 @@ namespace Chip8
                     int n = opcode & 0x000F;
                     V[15] = 0;
                     //???? why n-1 would look better
-                    for (int i = 0; i < n-1; i++)
+                    for (int i = 0; i < n; i++)
                     {
                         byte mem = RAM[I+i];
                         
