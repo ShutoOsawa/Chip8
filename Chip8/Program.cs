@@ -1,17 +1,39 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
 using System.Threading;
+using SDL2;
 namespace Chip8
 {
     class Program
     {
         static void Main(string[] args)
         {
+            if (SDL.SDL_Init(SDL.SDL_INIT_EVERYTHING) < 0)
+            {
+                Console.WriteLine("SDL failed to init.");
+                return;
+            }
 
-            
+            IntPtr window = SDL.SDL_CreateWindow("Chip-8 Interpreter", 128, 128, 64 * 8, 32 * 8, 0);
+
+            if (window == IntPtr.Zero)
+            {
+                Console.WriteLine("SDL could not create a window.");
+                return;
+            }
+
+            IntPtr renderer = SDL.SDL_CreateRenderer(window, -1, SDL.SDL_RendererFlags.SDL_RENDERER_ACCELERATED);
+
+            if (renderer == IntPtr.Zero)
+            {
+                Console.WriteLine("SDL could not create a valid renderer.");
+                return;
+            }
+
             CPU cpu = new CPU();
-            using (BinaryReader reader = new BinaryReader(new FileStream(@"c8games/maze", FileMode.Open)))
+            using (BinaryReader reader = new BinaryReader(new FileStream(@"heart_monitor.ch8", FileMode.Open)))
             {
                 List<byte> program = new List<byte>();
                 while (reader.BaseStream.Position < reader.BaseStream.Length-1)
@@ -24,13 +46,37 @@ namespace Chip8
                 //cpu.LoadProgram(program);
             }
 
-            while (true)
+            SDL.SDL_Event sdlEvent;
+            bool running = true;
+            IntPtr sdlSurface, sdlTexture = IntPtr.Zero;
+             
+
+            while (running)
             {
                 try
                 {
                     cpu.Step();
-                    //cpu.DrawDisplay();
-                    //Thread.Sleep(5);
+                    while(SDL.SDL_PollEvent(out sdlEvent) != 0)
+                    {
+                        if(sdlEvent.type == SDL.SDL_EventType.SDL_QUIT)
+                        {
+                            running = false;
+                        }
+                    }
+                    var displayHandle = GCHandle.Alloc(cpu.Display, GCHandleType.Pinned);
+
+                    if (sdlTexture != IntPtr.Zero) SDL.SDL_DestroyTexture(sdlTexture);
+
+                    sdlSurface = SDL.SDL_CreateRGBSurfaceFrom(displayHandle.AddrOfPinnedObject(), 64, 32, 32, 64 * 4, 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000);
+                    sdlTexture = SDL.SDL_CreateTextureFromSurface(renderer, sdlSurface);
+
+                    displayHandle.Free();
+
+                    SDL.SDL_RenderClear(renderer);
+                    SDL.SDL_RenderCopy(renderer, sdlTexture, IntPtr.Zero, IntPtr.Zero);
+                    SDL.SDL_RenderPresent(renderer);
+                    Thread.Sleep(1);
+
                 }
                 catch (Exception e)
                 {
@@ -55,7 +101,7 @@ namespace Chip8
         public byte SoundTimer;
         public byte Keyboard;
 
-        public byte[] Display = new byte[64 * 32];
+        public uint[] Display = new uint[64 * 32];
 
         public Random generator = new Random(Environment.TickCount);
 
@@ -197,18 +243,18 @@ namespace Chip8
                             int index = x + j + (y + i) * 64;
                             if (pixel == 1 && Display[index] != 0) V[15] = 1;
 
-                            if(Display[index] == 1 && pixel == 1)
-                            {
-                                Console.SetCursorPosition(x + j, y + i);
-                                Console.Write(" ");
-                            }
-                            else if (Display[index] == 0 && pixel == 1)
-                            {
-                                Console.SetCursorPosition(x + j, y + i);
-                                Console.Write("*");
-                            }
+                            //if(Display[index] == 1 && pixel == 1)
+                            //{
+                            //    Console.SetCursorPosition(x + j, y + i);
+                            //    Console.Write(" ");
+                            //}
+                            //else if (Display[index] == 0 && pixel == 1)
+                            //{
+                            //    Console.SetCursorPosition(x + j, y + i);
+                            //    Console.Write("*");
+                            //}
                             //XOR
-                            Display[index] = (byte)(Display[index] ^ pixel);
+                            Display[index] = (Display[index] != 0 && pixel == 0) || (Display[index] == 0 && pixel == 1) ? 0xffffffff : 0;//(byte)(Display[index] ^ pixel);
                         }
                     }
 
