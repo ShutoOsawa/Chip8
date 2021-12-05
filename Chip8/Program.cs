@@ -11,7 +11,7 @@ namespace Chip8
 
             
             CPU cpu = new CPU();
-            using (BinaryReader reader = new BinaryReader(new FileStream("IBM LOGO.ch8", FileMode.Open)))
+            using (BinaryReader reader = new BinaryReader(new FileStream(@"c8games/maze", FileMode.Open)))
             {
                 List<byte> program = new List<byte>();
                 while (reader.BaseStream.Position < reader.BaseStream.Length-1)
@@ -112,9 +112,9 @@ namespace Chip8
                 case 0x1000:
                     PC = (ushort)(opcode & 0x0FFF);                    
                     break;
-                case 0x2000:
+                case 0x2000:                    
                     Stack.Push(PC);
-                    PC = (ushort)(opcode & 0x0FFF);
+                    PC = (ushort)(opcode & 0x0FFF);                    
                     break;
                 case 0x3000:
                     //PC is already added in advance, so adding extra PC is equivalent to skipping an instruction
@@ -134,7 +134,8 @@ namespace Chip8
                     break;
                 case 0x8000:
                     int vx = (opcode & 0x0F00) >> 8;
-                    int vy = (opcode & 0x00F0) >> 8;
+                    //bug here?
+                    int vy = (opcode & 0x00F0) >> 4;
                     switch (opcode & 0x000F)
                     {
                         case 0: V[vx] = V[vy]; break;
@@ -147,6 +148,8 @@ namespace Chip8
                             break;
                         case 5:
                             V[15] = (byte)(V[vx] > V[vy]? 1 : 0);
+                            //which one?
+                            //V[15] = (byte)(V[vy] > V[vx] ? 1 : 0);
                             V[vx] = (byte)((V[vx] - V[vy]) & 0x00FF);
                             break;
                         case 6:
@@ -182,11 +185,12 @@ namespace Chip8
                     int y = V[(opcode & 0x00F0) >> 4];
                     int n = opcode & 0x000F;
                     V[15] = 0;
-                    for (int i = 0; i < n; i++)
+                    //???? why n-1 would look better
+                    for (int i = 0; i < n-1; i++)
                     {
                         byte mem = RAM[I+i];
                         
-                        for (int j = 0;j < 8; j++)
+                        for (int j = 0; j < 8; j++)
                         {
                             //Checking each byte one by one, so need to shift the byte by a certain amount
                             byte pixel = (byte)(mem >> (7 - j) & 0x01);
