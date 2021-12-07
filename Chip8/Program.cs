@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -33,10 +34,10 @@ namespace Chip8
             }
 
             CPU cpu = new CPU();
-            using (BinaryReader reader = new BinaryReader(new FileStream(@"ibm logo.ch8", FileMode.Open)))
+            using (BinaryReader reader = new BinaryReader(new FileStream(@"c8games\tetris", FileMode.Open)))
             {
                 List<byte> program = new List<byte>();
-                while (reader.BaseStream.Position < reader.BaseStream.Length-1)
+                while (reader.BaseStream.Position < reader.BaseStream.Length)
                 {
                     //var opcode = (ushort)((reader.ReadByte() << 8) | reader.ReadByte());
                     //program.Add((ushort)((reader.ReadByte() << 8) | reader.ReadByte()));
@@ -75,7 +76,7 @@ namespace Chip8
                     SDL.SDL_RenderClear(renderer);
                     SDL.SDL_RenderCopy(renderer, sdlTexture, IntPtr.Zero, IntPtr.Zero);
                     SDL.SDL_RenderPresent(renderer);
-                    Thread.Sleep(1);
+                    //Thread.Sleep(1);
 
                 }
                 catch (Exception e)
@@ -120,8 +121,8 @@ namespace Chip8
 
         }
 
-        
-       
+
+        private Stopwatch watch = new Stopwatch();
         public void Step()
         {
             //var opcode = Program[PC];
@@ -133,6 +134,16 @@ namespace Chip8
                 V[(opcode & 0x0F00) >> 8] = Keyboard;
                 return;
             }
+
+            if (!watch.IsRunning) watch.Start();
+            if(watch.ElapsedMilliseconds > 16) //62.5fps??
+            {
+                if (DelayTimer > 0) DelayTimer--;
+                if (SoundTimer > 0) SoundTimer--;
+                watch.Restart();
+            }
+            
+
 
             //this only takes the first hex opcode
             ushort nibble = (ushort)(opcode & 0xF000);
@@ -241,6 +252,7 @@ namespace Chip8
                             //Checking each byte one by one, so need to shift the byte by a certain amount
                             byte pixel = (byte)(mem >> (7 - j) & 0x01);
                             int index = x + j + (y + i) * 64;
+                            if (index > 2047) continue;
                             if (pixel == 1 && Display[index] != 0) V[15] = 1;
 
                             //if(Display[index] == 1 && pixel == 1)
@@ -257,8 +269,6 @@ namespace Chip8
                             Display[index] = (Display[index] != 0 && pixel == 0) || (Display[index] == 0 && pixel == 1) ? 0xffffffff : 0;//(byte)(Display[index] ^ pixel);
                         }
                     }
-
-                    //DrawDisplay();
                     break;
                 case 0xE000:
                     if ((opcode & 0x00FF) == 0x009E)
