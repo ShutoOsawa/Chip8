@@ -72,7 +72,7 @@ namespace Chip8
             }
 
 
-
+            //test
             //this only takes the first hex opcode
             ushort nibble = (ushort)(opcode & 0xF000);
 
